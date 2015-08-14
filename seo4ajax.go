@@ -1,3 +1,7 @@
+/*
+	Package seo4ajax provides a library for accessing the SEO4Ajax prerender service.
+	Before using, you need to set ServerIp to a valid IP address.
+*/
 package seo4ajax
 
 import (
@@ -33,9 +37,7 @@ var (
 	token                 = os.Getenv("SEO4AJAX_TOKEN")
 
 	client = &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return errRedirect
-		},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error { return errRedirect },
 	}
 )
 
@@ -101,12 +103,12 @@ func GetPrerenderedPage(w http.ResponseWriter, req *http.Request) (err error) {
 	}
 	defer resp.Body.Close()
 
-	for header, val := range resp.Header {
-		w.Header()[header] = val
-	}
-
 	switch resp.StatusCode {
 	case 200:
+		for header, val := range resp.Header {
+			w.Header()[header] = val
+		}
+
 		_, err = io.Copy(w, resp.Body)
 	case 302:
 		http.Redirect(w, req, resp.Header.Get("Location"), resp.StatusCode)
