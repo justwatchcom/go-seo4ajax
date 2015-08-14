@@ -11,10 +11,12 @@ import (
 
 var (
 	port      = ":8080"
-	appAdress = "localhost:3000"
+	appAdress = "127.0.0.1:3000"
 )
 
 func TestIsPrerender(t *testing.T) {
+	ServerIp = "127.0.0.1"
+
 	Convey("_escaped_fragment_ urls properly proxified", t, func() {
 		Convey("without _escaped_fragment_", func() {
 			req, err := http.NewRequest("GET", "http://"+appAdress+"/path?withQuery=parameter", nil)
@@ -283,7 +285,7 @@ func TestIsPrerender(t *testing.T) {
 		Convey("x-forwarded-for added", func(c C) {
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.Convey("expected request in (mock) server", func() {
-					So(r.Header.Get("x-forwarded-for"), ShouldEqual, appAdress)
+					So(r.Header.Get("x-forwarded-for"), ShouldEqual, ServerIp)
 				})
 			}))
 			defer ts.Close()
@@ -302,7 +304,7 @@ func TestIsPrerender(t *testing.T) {
 		Convey("x-forwarded-for already present", func(c C) {
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.Convey("expected request in (mock) server", func() {
-					So(r.Header.Get("X-Forwarded-For"), ShouldResemble, appAdress+", 10.0.0.2, 10.0.0.1")
+					So(r.Header.Get("X-Forwarded-For"), ShouldResemble, ServerIp+", 10.0.0.2, 10.0.0.1")
 				})
 			}))
 			defer ts.Close()

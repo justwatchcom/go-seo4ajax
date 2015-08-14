@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,16 +13,24 @@ import (
 )
 
 var (
+	// IP the server is listening on.
+	ServerIp string
+
+	// token is either empty or invalid
+	ErrNoToken = errors.New("no token given")
+	// please set ServerIp to a valid IP (parseable by net.ParseIP())
+	ErrNoAddress = errors.New("no ip address")
+	// seo4ajax responded with a cache miss
+	ErrCacheMiss = errors.New("cache miss from seo4ajax")
+	errRedirect  = errors.New("SEO4AJAX: do not follow redirect")
+
+	// used for testing
 	apiHost = "http://api.seo4ajax.com"
 
 	regexInvalidUserAgent = regexp.MustCompile(`(?i:google.*bot|bing|msnbot|yandexbot|pinterest.*ios|mail\.ru)`)
 	regexValidUserAgent   = regexp.MustCompile(`(?i:bot|crawler|spider|archiver|pinterest|facebookexternalhit|flipboardproxy)`)
 	regexPath             = regexp.MustCompile(`.*(\.[^?]{2,4}$|\.[^?]{2,4}?.*)`)
 	token                 = os.Getenv("SEO4AJAX_TOKEN")
-
-	ErrNoToken   = errors.New("no token given")
-	ErrCacheMiss = errors.New("cache miss from seo4ajax")
-	errRedirect  = errors.New("SEO4AJAX: do not follow redirect")
 
 	client = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -62,6 +71,11 @@ func GetPrerenderedPage(w http.ResponseWriter, req *http.Request) (err error) {
 		return
 	}
 
+	if ServerIp == "" || net.ParseIP(ServerIp) == nil {
+		err = ErrNoAddress
+		return
+	}
+
 	var prerenderRequest *http.Request
 	prerenderRequest, err = http.NewRequest("GET", fmt.Sprintf("%s/%s%s", apiHost, token, cleanPath(req.URL)), nil)
 	if err != nil {
@@ -72,9 +86,9 @@ func GetPrerenderedPage(w http.ResponseWriter, req *http.Request) (err error) {
 
 	xForwardedFor := req.Header.Get("X-Forwarded-For")
 	if xForwardedFor != "" {
-		xForwardedFor = fmt.Sprintf("%s, %s", req.URL.Host, xForwardedFor)
+		xForwardedFor = fmt.Sprintf("%s, %s", ServerIp, xForwardedFor)
 	} else {
-		xForwardedFor = req.URL.Host
+		xForwardedFor = ServerIp
 	}
 	prerenderRequest.Header.Set("X-Forwarded-For", xForwardedFor)
 
@@ -103,11 +117,7 @@ func GetPrerenderedPage(w http.ResponseWriter, req *http.Request) (err error) {
 	}
 
 	if err != nil {
-		code := resp.StatusCode
-		if code == 200 {
-			code = http.StatusInternalServerError
-		}
-		http.Error(w, err.Error(), code)
+		http.Error(w, err.Error(), 503)
 	}
 
 	return
