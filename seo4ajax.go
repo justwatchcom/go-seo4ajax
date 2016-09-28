@@ -11,75 +11,73 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 )
 
 var (
-	// IP the server is listening on.
-	ServerIp string
-
-	// token is either empty or invalid
 	ErrNoToken = errors.New("no token given")
-	// please set ServerIp to a valid IP (parseable by net.ParseIP())
-	ErrNoAddress = errors.New("no ip address")
 	// seo4ajax responded with a cache miss
 	ErrCacheMiss = errors.New("cache miss from seo4ajax")
 	errRedirect  = errors.New("SEO4AJAX: do not follow redirect")
 
-	// used for testing
-	apiHost = "http://api.seo4ajax.com"
-
 	regexInvalidUserAgent = regexp.MustCompile(`(?i:google.*bot|bing|msnbot|yandexbot|pinterest.*ios|mail\.ru)`)
 	regexValidUserAgent   = regexp.MustCompile(`(?i:bot|crawler|spider|archiver|pinterest|facebookexternalhit|flipboardproxy)`)
 	regexPath             = regexp.MustCompile(`.*(\.[^?]{2,4}$|\.[^?]{2,4}?.*)`)
-	token                 = os.Getenv("SEO4AJAX_TOKEN")
 
 	client = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error { return errRedirect },
 	}
 )
 
+type Client struct {
+	APIHost         string
+	serverIP, token string
+}
+
+func New(serverIP, token string) (*Client, error) {
+	if serverIP == "" || net.ParseIP(serverIP) == nil {
+		return nil, errors.New("no ip address")
+	}
+
+	if token == "" {
+		return nil, ErrNoToken
+	}
+
+	return &Client{
+		APIHost:  "http://api.seo4ajax.com",
+		serverIP: serverIP,
+		token:    token,
+	}, nil
+}
+
 // IsPrerender returns true, when Seo4Ajax shall be used for the given http Request.
 // The logic is taken from https://github.com/seo4ajax/connect-s4a/blob/master/lib/connect-s4a.js
 func IsPrerender(req *http.Request) (usePrerender bool) {
 	if req.Method != "GET" && req.Method != "HEAD" {
-		return
+		return false
 	}
 
-	usePrerender = strings.Contains(req.URL.RawQuery, "_escaped_fragment_")
-	if usePrerender {
-		return
+	if strings.Contains(req.URL.RawQuery, "_escaped_fragment_") {
+		return true
 	}
 
 	if regexInvalidUserAgent.MatchString(req.Header.Get("User-Agent")) {
-		return
+		return false
 	}
 
 	if regexPath.MatchString(req.URL.Path) {
-		return
+		return false
 	}
 
-	usePrerender = regexValidUserAgent.MatchString(req.Header.Get("User-Agent"))
-	return
+	return regexValidUserAgent.MatchString(req.Header.Get("User-Agent"))
 }
 
 // GetPrerenderedPage returns the prerendered html from the seo4ajax api. If no
 // token is given, it will return an error.
-func GetPrerenderedPage(w http.ResponseWriter, req *http.Request) (err error) {
-	if token == "" {
-		err = ErrNoToken
-		return
-	}
-
-	if ServerIp == "" || net.ParseIP(ServerIp) == nil {
-		err = ErrNoAddress
-		return
-	}
-
+func (c *Client) GetPrerenderedPage(w http.ResponseWriter, req *http.Request) (err error) {
 	var prerenderRequest *http.Request
-	prerenderRequest, err = http.NewRequest("GET", fmt.Sprintf("%s/%s%s", apiHost, token, cleanPath(req.URL)), nil)
+	prerenderRequest, err = http.NewRequest("GET", fmt.Sprintf("%s/%s%s", c.APIHost, c.token, cleanPath(req.URL)), nil)
 	if err != nil {
 		return
 	}
@@ -88,9 +86,9 @@ func GetPrerenderedPage(w http.ResponseWriter, req *http.Request) (err error) {
 
 	xForwardedFor := req.Header.Get("X-Forwarded-For")
 	if xForwardedFor != "" {
-		xForwardedFor = fmt.Sprintf("%s, %s", ServerIp, xForwardedFor)
+		xForwardedFor = fmt.Sprintf("%s, %s", c.serverIP, xForwardedFor)
 	} else {
-		xForwardedFor = ServerIp
+		xForwardedFor = c.serverIP
 	}
 	prerenderRequest.Header.Set("X-Forwarded-For", xForwardedFor)
 

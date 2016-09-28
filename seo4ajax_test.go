@@ -15,7 +15,7 @@ var (
 )
 
 func TestIsPrerender(t *testing.T) {
-	ServerIp = "127.0.0.1"
+	serverIP := "127.0.0.1"
 
 	Convey("_escaped_fragment_ urls properly proxified", t, func() {
 		Convey("without _escaped_fragment_", func() {
@@ -232,8 +232,7 @@ func TestIsPrerender(t *testing.T) {
 	})
 
 	Convey("with mock server", t, func() {
-		savedToken := token
-		token = "123"
+		token := "123"
 
 		Convey("_escaped_fragment_ urls properly proxified", func() {
 			Convey("token well added", func(c C) {
@@ -246,14 +245,17 @@ func TestIsPrerender(t *testing.T) {
 				}))
 				defer ts.Close()
 
-				apiHost = "http://" + ts.Listener.Addr().String()
+				seo4ajaxClient, err := New(serverIP, token)
+				So(err, ShouldBeNil)
+				So(seo4ajaxClient, ShouldNotBeNil)
+				seo4ajaxClient.APIHost = "http://" + ts.Listener.Addr().String()
 
 				req, err := http.NewRequest("GET", "http://"+appAdress+"/path?param1=val1&_escaped_fragment_=", nil)
 				So(err, ShouldBeNil)
 				So(req, ShouldNotBeNil)
 				So(IsPrerender(req), ShouldBeTrue)
 				recorder := httptest.NewRecorder()
-				err = GetPrerenderedPage(recorder, req)
+				err = seo4ajaxClient.GetPrerenderedPage(recorder, req)
 				So(err, ShouldBeNil)
 			})
 		})
@@ -268,7 +270,10 @@ func TestIsPrerender(t *testing.T) {
 				}))
 				defer ts.Close()
 
-				apiHost = "http://" + ts.Listener.Addr().String()
+				seo4ajaxClient, err := New(serverIP, token)
+				So(err, ShouldBeNil)
+				So(seo4ajaxClient, ShouldNotBeNil)
+				seo4ajaxClient.APIHost = "http://" + ts.Listener.Addr().String()
 
 				req, err := http.NewRequest("GET", "http://"+appAdress+"/path?param1=val1&_escaped_fragment_=", nil)
 				req.Header.Add("content-type", "content-type")
@@ -277,7 +282,7 @@ func TestIsPrerender(t *testing.T) {
 				So(req, ShouldNotBeNil)
 				So(IsPrerender(req), ShouldBeTrue)
 				recorder := httptest.NewRecorder()
-				err = GetPrerenderedPage(recorder, req)
+				err = seo4ajaxClient.GetPrerenderedPage(recorder, req)
 				So(err, ShouldBeNil)
 			})
 		})
@@ -285,31 +290,37 @@ func TestIsPrerender(t *testing.T) {
 		Convey("x-forwarded-for added", func(c C) {
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.Convey("expected request in (mock) server", func() {
-					So(r.Header.Get("x-forwarded-for"), ShouldEqual, ServerIp)
+					So(r.Header.Get("x-forwarded-for"), ShouldEqual, serverIP)
 				})
 			}))
 			defer ts.Close()
 
-			apiHost = "http://" + ts.Listener.Addr().String()
+			seo4ajaxClient, err := New(serverIP, token)
+			So(err, ShouldBeNil)
+			So(seo4ajaxClient, ShouldNotBeNil)
+			seo4ajaxClient.APIHost = "http://" + ts.Listener.Addr().String()
 
 			req, err := http.NewRequest("GET", "http://"+appAdress+"/?_escaped_fragment_=", nil)
 			So(err, ShouldBeNil)
 			So(req, ShouldNotBeNil)
 			So(IsPrerender(req), ShouldBeTrue)
 			recorder := httptest.NewRecorder()
-			err = GetPrerenderedPage(recorder, req)
+			err = seo4ajaxClient.GetPrerenderedPage(recorder, req)
 			So(err, ShouldBeNil)
 		})
 
 		Convey("x-forwarded-for already present", func(c C) {
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.Convey("expected request in (mock) server", func() {
-					So(r.Header.Get("X-Forwarded-For"), ShouldResemble, ServerIp+", 10.0.0.2, 10.0.0.1")
+					So(r.Header.Get("X-Forwarded-For"), ShouldResemble, serverIP+", 10.0.0.2, 10.0.0.1")
 				})
 			}))
 			defer ts.Close()
 
-			apiHost = "http://" + ts.Listener.Addr().String()
+			seo4ajaxClient, err := New(serverIP, token)
+			So(err, ShouldBeNil)
+			So(seo4ajaxClient, ShouldNotBeNil)
+			seo4ajaxClient.APIHost = "http://" + ts.Listener.Addr().String()
 
 			req, err := http.NewRequest("GET", "http://"+appAdress+"/?_escaped_fragment_=", nil)
 			req.Header.Add("x-forwarded-for", "10.0.0.2, 10.0.0.1")
@@ -317,23 +328,23 @@ func TestIsPrerender(t *testing.T) {
 			So(req, ShouldNotBeNil)
 			So(IsPrerender(req), ShouldBeTrue)
 			recorder := httptest.NewRecorder()
-			err = GetPrerenderedPage(recorder, req)
+			err = seo4ajaxClient.GetPrerenderedPage(recorder, req)
 			So(err, ShouldBeNil)
 		})
-
-		token = savedToken
 	})
 
 	Convey("not follow redirect", t, func() {
-		savedToken := token
-		token = "123"
+		token := "123"
 
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "http://example.com/", 302)
 		}))
 		defer ts.Close()
 
-		apiHost = "http://" + ts.Listener.Addr().String()
+		seo4ajaxClient, err := New(serverIP, token)
+		So(err, ShouldBeNil)
+		So(seo4ajaxClient, ShouldNotBeNil)
+		seo4ajaxClient.APIHost = "http://" + ts.Listener.Addr().String()
 
 		req, err := http.NewRequest("GET", "http://"+appAdress+"/?_escaped_fragment_=", nil)
 		So(err, ShouldBeNil)
@@ -341,26 +352,17 @@ func TestIsPrerender(t *testing.T) {
 		So(IsPrerender(req), ShouldBeTrue)
 
 		recorder := httptest.NewRecorder()
-		err = GetPrerenderedPage(recorder, req)
+		err = seo4ajaxClient.GetPrerenderedPage(recorder, req)
 
 		So(err, ShouldBeNil)
 		So(recorder.Header().Get("Location"), ShouldEqual, "http://example.com/")
 		So(recorder.Code, ShouldEqual, 302)
-		token = savedToken
 	})
 
 	Convey("returns error if no token", t, func() {
-		savedToken := token
-		token = ""
-
-		req, err := http.NewRequest("GET", "http://"+appAdress+"/?_escaped_fragment_=", nil)
-		So(err, ShouldBeNil)
-		So(req, ShouldNotBeNil)
-
-		recorder := httptest.NewRecorder()
-		err = GetPrerenderedPage(recorder, req)
+		seo4ajaxClient, err := New(serverIP, "")
+		So(seo4ajaxClient, ShouldBeNil)
 		So(err, ShouldNotBeNil)
 		So(err, ShouldEqual, ErrNoToken)
-		token = savedToken
 	})
 }
