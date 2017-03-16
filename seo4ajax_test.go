@@ -245,17 +245,20 @@ func TestIsPrerender(t *testing.T) {
 				}))
 				defer ts.Close()
 
-				seo4ajaxClient, err := New(serverIP, token)
+				seo4ajaxClient, err := New(Config{
+					IP:     serverIP,
+					Token:  token,
+					Server: ts.URL,
+				})
 				So(err, ShouldBeNil)
 				So(seo4ajaxClient, ShouldNotBeNil)
-				seo4ajaxClient.APIHost = "http://" + ts.Listener.Addr().String()
 
 				req, err := http.NewRequest("GET", "http://"+appAdress+"/path?param1=val1&_escaped_fragment_=", nil)
 				So(err, ShouldBeNil)
 				So(req, ShouldNotBeNil)
 				So(IsPrerender(req), ShouldBeTrue)
 				recorder := httptest.NewRecorder()
-				err = seo4ajaxClient.GetPrerenderedPage(recorder, req)
+				seo4ajaxClient.ServeHTTP(recorder, req)
 				So(err, ShouldBeNil)
 			})
 		})
@@ -270,10 +273,13 @@ func TestIsPrerender(t *testing.T) {
 				}))
 				defer ts.Close()
 
-				seo4ajaxClient, err := New(serverIP, token)
+				seo4ajaxClient, err := New(Config{
+					IP:     serverIP,
+					Token:  token,
+					Server: ts.URL,
+				})
 				So(err, ShouldBeNil)
 				So(seo4ajaxClient, ShouldNotBeNil)
-				seo4ajaxClient.APIHost = "http://" + ts.Listener.Addr().String()
 
 				req, err := http.NewRequest("GET", "http://"+appAdress+"/path?param1=val1&_escaped_fragment_=", nil)
 				req.Header.Add("content-type", "content-type")
@@ -282,7 +288,7 @@ func TestIsPrerender(t *testing.T) {
 				So(req, ShouldNotBeNil)
 				So(IsPrerender(req), ShouldBeTrue)
 				recorder := httptest.NewRecorder()
-				err = seo4ajaxClient.GetPrerenderedPage(recorder, req)
+				seo4ajaxClient.ServeHTTP(recorder, req)
 				So(err, ShouldBeNil)
 			})
 		})
@@ -295,17 +301,20 @@ func TestIsPrerender(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			seo4ajaxClient, err := New(serverIP, token)
+			seo4ajaxClient, err := New(Config{
+				IP:     serverIP,
+				Token:  token,
+				Server: ts.URL,
+			})
 			So(err, ShouldBeNil)
 			So(seo4ajaxClient, ShouldNotBeNil)
-			seo4ajaxClient.APIHost = "http://" + ts.Listener.Addr().String()
 
 			req, err := http.NewRequest("GET", "http://"+appAdress+"/?_escaped_fragment_=", nil)
 			So(err, ShouldBeNil)
 			So(req, ShouldNotBeNil)
 			So(IsPrerender(req), ShouldBeTrue)
 			recorder := httptest.NewRecorder()
-			err = seo4ajaxClient.GetPrerenderedPage(recorder, req)
+			seo4ajaxClient.ServeHTTP(recorder, req)
 			So(err, ShouldBeNil)
 		})
 
@@ -317,10 +326,13 @@ func TestIsPrerender(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			seo4ajaxClient, err := New(serverIP, token)
+			seo4ajaxClient, err := New(Config{
+				IP:     serverIP,
+				Token:  token,
+				Server: ts.URL,
+			})
 			So(err, ShouldBeNil)
 			So(seo4ajaxClient, ShouldNotBeNil)
-			seo4ajaxClient.APIHost = "http://" + ts.Listener.Addr().String()
 
 			req, err := http.NewRequest("GET", "http://"+appAdress+"/?_escaped_fragment_=", nil)
 			req.Header.Add("x-forwarded-for", "10.0.0.2, 10.0.0.1")
@@ -328,7 +340,7 @@ func TestIsPrerender(t *testing.T) {
 			So(req, ShouldNotBeNil)
 			So(IsPrerender(req), ShouldBeTrue)
 			recorder := httptest.NewRecorder()
-			err = seo4ajaxClient.GetPrerenderedPage(recorder, req)
+			seo4ajaxClient.ServeHTTP(recorder, req)
 			So(err, ShouldBeNil)
 		})
 	})
@@ -341,10 +353,13 @@ func TestIsPrerender(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		seo4ajaxClient, err := New(serverIP, token)
+		seo4ajaxClient, err := New(Config{
+			IP:     serverIP,
+			Token:  token,
+			Server: ts.URL,
+		})
 		So(err, ShouldBeNil)
 		So(seo4ajaxClient, ShouldNotBeNil)
-		seo4ajaxClient.APIHost = "http://" + ts.Listener.Addr().String()
 
 		req, err := http.NewRequest("GET", "http://"+appAdress+"/?_escaped_fragment_=", nil)
 		So(err, ShouldBeNil)
@@ -352,7 +367,7 @@ func TestIsPrerender(t *testing.T) {
 		So(IsPrerender(req), ShouldBeTrue)
 
 		recorder := httptest.NewRecorder()
-		err = seo4ajaxClient.GetPrerenderedPage(recorder, req)
+		seo4ajaxClient.ServeHTTP(recorder, req)
 
 		So(err, ShouldBeNil)
 		So(recorder.Header().Get("Location"), ShouldEqual, "http://example.com/")
@@ -360,7 +375,9 @@ func TestIsPrerender(t *testing.T) {
 	})
 
 	Convey("returns error if no token", t, func() {
-		seo4ajaxClient, err := New(serverIP, "")
+		seo4ajaxClient, err := New(Config{
+			IP: serverIP,
+		})
 		So(seo4ajaxClient, ShouldBeNil)
 		So(err, ShouldNotBeNil)
 		So(err, ShouldEqual, ErrNoToken)
