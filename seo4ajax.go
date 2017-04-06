@@ -33,12 +33,13 @@ var (
 
 // Config is the Seo4Ajax Client config
 type Config struct {
-	Log     log.Logger
-	Next    http.Handler
-	Server  string        // seo4ajax api server, defaults to http://api.seo4ajax.com
-	Token   string        // seo4ajax token, must be set
-	IP      string        // server IP, defaults to 127.0.0.1
-	Timeout time.Duration // retry timeout, defaults to 30s
+	Log       log.Logger
+	Next      http.Handler
+	Transport http.RoundTripper
+	Server    string        // seo4ajax api server, defaults to http://api.seo4ajax.com
+	Token     string        // seo4ajax token, must be set
+	IP        string        // server IP, defaults to 127.0.0.1
+	Timeout   time.Duration // retry timeout, defaults to 30s
 }
 
 // Client is the Seo4Ajax Client
@@ -69,6 +70,9 @@ func New(cfg Config) (*Client, error) {
 	if cfg.Timeout < time.Second {
 		cfg.Timeout = 30 * time.Second
 	}
+	if cfg.Transport == nil {
+		cfg.Transport = http.DefaultTransport
+	}
 
 	c := &Client{
 		log:     cfg.Log,
@@ -82,6 +86,7 @@ func New(cfg Config) (*Client, error) {
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return errRedirect
 		},
+		Transport: cfg.Transport,
 	}
 	return c, nil
 }
