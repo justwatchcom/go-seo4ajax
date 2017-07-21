@@ -114,8 +114,10 @@ func IsPrerender(r *http.Request) bool {
 }
 
 // ServeHTTP will serve the prerendered page if this is a prerender request.
-// If no upstream handler is set it will return an error.
-// Otherwise it will just invoke the upstream handler
+// If no upstream handler is set it will return an error. Otherwise it will
+// just invoke the upstream handler. This way it can be either used as an
+// HTTP middleware intercepting any prerender requests or an regular HTTP
+// handler (if next is nil) to serve only prerender request
 func (c *Client) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if IsPrerender(r) {
 		c.GetPrerenderedPage(w, r)
