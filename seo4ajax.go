@@ -23,7 +23,7 @@ var (
 	ErrNoToken = errors.New("no token given")
 	// seo4ajax responded with a cache miss
 	ErrCacheMiss     = errors.New("cache miss from seo4ajax")
-	ErrUnknownStatus = fmt.Errorf("Unkonwn Status Code")
+	ErrUnknownStatus = errors.New("Unkonwn Status Code")
 	errRedirect      = errors.New("SEO4AJAX: do not follow redirect")
 
 	regexInvalidUserAgent = regexp.MustCompile(`(?i:google.*bot|bing|msnbot|yandexbot|pinterest.*ios|mail\.ru)`)
@@ -113,12 +113,17 @@ func IsPrerender(r *http.Request) bool {
 	return regexValidUserAgent.MatchString(r.Header.Get("User-Agent"))
 }
 
-// ServeHTTP will serve the prerendered page if this is a prerender request
-// or no upstream handler is set. Otherwise it will just invoke the upstream
-// handler
+// ServeHTTP will serve the prerendered page if this is a prerender request.
+// If no upstream handler is set it will return an error.
+// Otherwise it will just invoke the upstream handler
 func (c *Client) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if IsPrerender(r) || c.next == nil {
+	if IsPrerender(r) {
 		c.GetPrerenderedPage(w, r)
+		return
+	}
+
+	if c.next == nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
