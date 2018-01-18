@@ -160,11 +160,6 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
-		if resp.StatusCode != http.StatusOK {
-			// retry
-			return err
-		}
-
 		for header, val := range resp.Header {
 			w.Header()[header] = val
 		}
