@@ -135,6 +135,7 @@ func (c *Client) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // GetPrerenderedPage returns the prerendered html from the seo4ajax api
 func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
+	var outputStarted bool
 	opFunc := func() error {
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s%s", c.server, c.token, cleanPath(r.URL)), nil)
 		if err != nil {
@@ -159,22 +160,15 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
-		if resp.StatusCode != http.StatusOK {
-			// retry
-			return err
-		}
-
 		for header, val := range resp.Header {
 			w.Header()[header] = val
 		}
 
+		outputStarted = true
 		// as soon as we start writing the body we must return nil, otherwise we'll
 		// mess up the HTTP response by calling response.WriteHeader multiple times
 		_, err = io.Copy(w, resp.Body)
-		if err != nil {
-			c.log.Log("level", "warning", "msg", "Failed to copy request", "err", err)
-		}
-		return nil
+		return err
 	}
 
 	bo := backoff.NewExponentialBackOff()
@@ -183,7 +177,11 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 	bo.MaxElapsedTime = c.timeout
 	err := backoff.Retry(opFunc, bo)
 	if err != nil {
-		c.log.Log("level", "warning", "msg", "Upstream request failed", "err", err)
+		c.log.Log("level", "warn", "msg", "Upstream request failed", "err", err)
+		if !outputStarted {
+			http.Error(w, "Upstream error", http.StatusInternalServerError)
+			return
+		}
 	}
 	return
 }
