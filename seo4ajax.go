@@ -179,6 +179,9 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 		// as soon as we start writing the body we must return nil, otherwise we'll
 		// mess up the HTTP response by calling response.WriteHeader multiple times
 		_, err = io.Copy(w, resp.Body)
+		if err == nil {
+			w.WriteHeader(resp.StatusCode)
+		}
 		return err
 	}
 
@@ -186,9 +189,11 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 	bo.InitialInterval = 50 * time.Millisecond
 	bo.MaxInterval = 30 * time.Second
 	bo.MaxElapsedTime = c.timeout
-	err := backoff.Retry(opFunc, bo)
+	err := backoff.RetryNotify(opFunc, bo, func(e error, duration time.Duration) {
+		c.log.Log("level", "warn", "msg", "Upstream request failed, retrying ...", "err", e)
+	})
 	if err != nil {
-		c.log.Log("level", "warn", "msg", "Upstream request failed", "err", err)
+		c.log.Log("level", "warn", "msg", "Upstream request finally failed", "err", err)
 		if !outputStarted {
 			http.Error(w, "Upstream error", http.StatusInternalServerError)
 			return
