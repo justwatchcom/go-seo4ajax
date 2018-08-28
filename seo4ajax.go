@@ -40,17 +40,22 @@ type Config struct {
 	Token     string        // seo4ajax token, must be set
 	IP        string        // server IP, defaults to 127.0.0.1
 	Timeout   time.Duration // retry timeout, defaults to 30s
+	// s4a supports client side caching and returns an empty 304 if the content hasn't changed.
+	// If UnconditionalFetch set to true the client side caching headers (If-Modified-Since and If-None-Match)
+	// are removed
+	UnconditionalFetch bool
 }
 
 // Client is the Seo4Ajax Client
 type Client struct {
-	log     log.Logger
-	next    http.Handler
-	server  string
-	token   string
-	ip      string
-	timeout time.Duration
-	http    *http.Client
+	log                log.Logger
+	next               http.Handler
+	server             string
+	token              string
+	ip                 string
+	timeout            time.Duration
+	http               *http.Client
+	unconditionalFetch bool
 }
 
 // New creates a new Seo4Ajax client. Returns an error if no token is provided
@@ -75,12 +80,13 @@ func New(cfg Config) (*Client, error) {
 	}
 
 	c := &Client{
-		log:     cfg.Log,
-		server:  cfg.Server,
-		token:   cfg.Token,
-		ip:      cfg.IP,
-		timeout: cfg.Timeout,
-		next:    cfg.Next,
+		log:                cfg.Log,
+		server:             cfg.Server,
+		token:              cfg.Token,
+		ip:                 cfg.IP,
+		timeout:            cfg.Timeout,
+		next:               cfg.Next,
+		unconditionalFetch: cfg.UnconditionalFetch,
 	}
 	c.http = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -148,6 +154,11 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 			ips = append(ips, xff)
 		}
 		req.Header.Set("X-Forwarded-For", strings.Join(ips, ", "))
+
+		if c.unconditionalFetch {
+			req.Header.Del("If-Modified-Since")
+			req.Header.Del("If-None-Match")
+		}
 
 		resp, err := c.http.Do(req)
 		if err != nil && !strings.HasSuffix(err.Error(), errRedirect.Error()) {
