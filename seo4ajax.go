@@ -26,7 +26,7 @@ var (
 	ErrUnknownStatus = errors.New("Unkonwn Status Code")
 	errRedirect      = errors.New("SEO4AJAX: do not follow redirect")
 
-	regexInvalidUserAgent = regexp.MustCompile(`(?i:google.*bot|bing|msnbot|yandexbot|pinterest.*ios|mail\.ru)`)
+	regexInvalidUserAgent = regexp.MustCompile(`(?i:bing|msnbot|yandexbot|pinterest.*ios|mail\.ru)`)
 	regexValidUserAgent   = regexp.MustCompile(`(?i:bot|crawler|spider|archiver|pinterest|facebookexternalhit|flipboardproxy)`)
 	regexPath             = regexp.MustCompile(`.*(\.[^?]{2,4}$|\.[^?]{2,4}?.*)`)
 )
