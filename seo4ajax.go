@@ -27,7 +27,7 @@ var (
 	errRedirect      = errors.New("SEO4AJAX: do not follow redirect")
 
 	regexInvalidUserAgent = regexp.MustCompile(`(?i:bing|msnbot|yandexbot|pinterest.*ios|mail\.ru)`)
-	regexValidUserAgent   = regexp.MustCompile(`(?i:bot|crawler|spider|archiver|pinterest|facebookexternalhit|flipboardproxy)`)
+	regexValidUserAgent   = regexp.MustCompile(`(?i:bot|google|crawler|spider|archiver|pinterest|facebookexternalhit|flipboardproxy)`)
 	regexPath             = regexp.MustCompile(`.*(\.[^?]{2,4}$|\.[^?]{2,4}?.*)`)
 )
 
