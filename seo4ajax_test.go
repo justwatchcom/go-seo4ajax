@@ -67,7 +67,7 @@ func TestIsPrerender(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(req, ShouldNotBeNil)
 			req.Header.Add("User-Agent", "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
-			So(IsPrerender(req), ShouldBeFalse)
+			So(IsPrerender(req), ShouldBeTrue)
 		})
 
 		Convey("Bing bot", func() {
@@ -83,7 +83,7 @@ func TestIsPrerender(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(req, ShouldNotBeNil)
 			req.Header.Add("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
-			So(IsPrerender(req), ShouldBeFalse)
+			So(IsPrerender(req), ShouldBeTrue)
 		})
 
 		Convey("Yandex bot", func() {

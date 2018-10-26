@@ -44,6 +44,8 @@ type Config struct {
 	// If UnconditionalFetch set to true the client side caching headers (If-Modified-Since and If-None-Match)
 	// are removed
 	UnconditionalFetch bool
+	// FetchErrorStatus is the http status code returned if the fetch from seo4ajax fails
+	FetchErrorStatus int
 }
 
 // Client is the Seo4Ajax Client
@@ -56,6 +58,7 @@ type Client struct {
 	timeout            time.Duration
 	http               *http.Client
 	unconditionalFetch bool
+	fetchErrorStatus   int
 }
 
 // New creates a new Seo4Ajax client. Returns an error if no token is provided
@@ -78,6 +81,9 @@ func New(cfg Config) (*Client, error) {
 	if cfg.Transport == nil {
 		cfg.Transport = http.DefaultTransport
 	}
+	if cfg.FetchErrorStatus == 0 {
+		cfg.FetchErrorStatus = http.StatusServiceUnavailable
+	}
 
 	c := &Client{
 		log:                cfg.Log,
@@ -87,6 +93,7 @@ func New(cfg Config) (*Client, error) {
 		timeout:            cfg.Timeout,
 		next:               cfg.Next,
 		unconditionalFetch: cfg.UnconditionalFetch,
+		fetchErrorStatus:   cfg.FetchErrorStatus,
 	}
 	c.http = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -190,7 +197,7 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		c.log.Log("level", "warn", "msg", "Upstream request failed", "err", err)
 		if !outputStarted {
-			http.Error(w, "Upstream error", http.StatusInternalServerError)
+			http.Error(w, "Upstream error", c.fetchErrorStatus)
 			return
 		}
 	}
