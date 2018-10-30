@@ -178,6 +178,11 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
+		if resp.StatusCode != http.StatusOK {
+			// retry
+			return fmt.Errorf("expected 200 status code, got %d", resp.StatusCode)
+		}
+
 		for header, val := range resp.Header {
 			w.Header()[header] = val
 		}
