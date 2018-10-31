@@ -46,6 +46,8 @@ type Config struct {
 	UnconditionalFetch bool
 	// FetchErrorStatus is the http status code returned if the fetch from seo4ajax fails
 	FetchErrorStatus int
+	// FetchTimeout is the http timeout for a single fetch attempt
+	FetchTimeout time.Duration
 }
 
 // Client is the Seo4Ajax Client
@@ -59,6 +61,7 @@ type Client struct {
 	http               *http.Client
 	unconditionalFetch bool
 	fetchErrorStatus   int
+	fetchTimeout       time.Duration
 }
 
 // New creates a new Seo4Ajax client. Returns an error if no token is provided
@@ -100,6 +103,9 @@ func New(cfg Config) (*Client, error) {
 			return errRedirect
 		},
 		Transport: cfg.Transport,
+	}
+	if cfg.FetchTimeout > 0 {
+		c.http.Timeout = cfg.FetchTimeout
 	}
 	return c, nil
 }
