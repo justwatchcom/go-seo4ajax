@@ -203,7 +203,9 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 	bo := backoff.NewExponentialBackOff()
 	bo.InitialInterval = 50 * time.Millisecond
 	bo.MaxInterval = 30 * time.Second
-	bo.MaxElapsedTime = c.timeout
+	if c.timeout > 0 {
+		bo.MaxElapsedTime = c.timeout
+	}
 	err := backoff.Retry(opFunc, bo)
 	if err != nil {
 		c.log.Log("level", "warn", "msg", "Upstream request failed", "err", err)
