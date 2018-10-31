@@ -63,7 +63,6 @@ type Client struct {
 	http               *http.Client
 	unconditionalFetch bool
 	fetchErrorStatus   int
-	fetchTimeout       time.Duration
 	retryUnavailable   bool
 }
 
@@ -80,9 +79,6 @@ func New(cfg Config) (*Client, error) {
 	}
 	if cfg.IP == "" {
 		cfg.IP = "127.0.0.1"
-	}
-	if cfg.Timeout < time.Second {
-		cfg.Timeout = 30 * time.Second
 	}
 	if cfg.Transport == nil {
 		cfg.Transport = http.DefaultTransport
