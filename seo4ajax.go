@@ -46,6 +46,10 @@ type Config struct {
 	UnconditionalFetch bool
 	// FetchErrorStatus is the http status code returned if the fetch from seo4ajax fails
 	FetchErrorStatus int
+	// FetchTimeout is the http timeout for a single fetch attempt
+	FetchTimeout time.Duration
+	// RetryUnavailable advises the retry loop to retry a fetch on 503 upstream results until success or Timeout
+	RetryUnavailable bool
 }
 
 // Client is the Seo4Ajax Client
@@ -59,6 +63,7 @@ type Client struct {
 	http               *http.Client
 	unconditionalFetch bool
 	fetchErrorStatus   int
+	retryUnavailable   bool
 }
 
 // New creates a new Seo4Ajax client. Returns an error if no token is provided
@@ -74,9 +79,6 @@ func New(cfg Config) (*Client, error) {
 	}
 	if cfg.IP == "" {
 		cfg.IP = "127.0.0.1"
-	}
-	if cfg.Timeout < time.Second {
-		cfg.Timeout = 30 * time.Second
 	}
 	if cfg.Transport == nil {
 		cfg.Transport = http.DefaultTransport
@@ -94,12 +96,16 @@ func New(cfg Config) (*Client, error) {
 		next:               cfg.Next,
 		unconditionalFetch: cfg.UnconditionalFetch,
 		fetchErrorStatus:   cfg.FetchErrorStatus,
+		retryUnavailable:   cfg.RetryUnavailable,
 	}
 	c.http = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return errRedirect
 		},
 		Transport: cfg.Transport,
+	}
+	if cfg.FetchTimeout > 0 {
+		c.http.Timeout = cfg.FetchTimeout
 	}
 	return c, nil
 }
@@ -178,6 +184,13 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
+		// conditionally terminate retry loop if the status code is 503
+		if !c.retryUnavailable {
+			if resp.StatusCode == http.StatusServiceUnavailable {
+				return backoff.Permanent(errors.New("page not yet rendered"))
+			}
+		}
+
 		if resp.StatusCode != http.StatusOK {
 			// retry
 			return fmt.Errorf("expected 200 status code, got %d", resp.StatusCode)
@@ -197,7 +210,9 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 	bo := backoff.NewExponentialBackOff()
 	bo.InitialInterval = 50 * time.Millisecond
 	bo.MaxInterval = 30 * time.Second
-	bo.MaxElapsedTime = c.timeout
+	if c.timeout > 0 {
+		bo.MaxElapsedTime = c.timeout
+	}
 	err := backoff.Retry(opFunc, bo)
 	if err != nil {
 		c.log.Log("level", "warn", "msg", "Upstream request failed", "err", err)
