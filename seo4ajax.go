@@ -48,6 +48,8 @@ type Config struct {
 	FetchErrorStatus int
 	// FetchTimeout is the http timeout for a single fetch attempt
 	FetchTimeout time.Duration
+	// RetryUnavailable advises the retry loop to retry a fetch on 503 upstream results until success or Timeout
+	RetryUnavailable bool
 }
 
 // Client is the Seo4Ajax Client
@@ -62,6 +64,7 @@ type Client struct {
 	unconditionalFetch bool
 	fetchErrorStatus   int
 	fetchTimeout       time.Duration
+	retryUnavailable   bool
 }
 
 // New creates a new Seo4Ajax client. Returns an error if no token is provided
@@ -97,6 +100,7 @@ func New(cfg Config) (*Client, error) {
 		next:               cfg.Next,
 		unconditionalFetch: cfg.UnconditionalFetch,
 		fetchErrorStatus:   cfg.FetchErrorStatus,
+		retryUnavailable:   cfg.RetryUnavailable,
 	}
 	c.http = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -182,6 +186,13 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 		if resp.StatusCode == http.StatusFound {
 			http.Redirect(w, r, resp.Header.Get("Location"), http.StatusFound)
 			return nil
+		}
+
+		// conditionally terminate retry loop if the status code is 503
+		if !c.retryUnavailable {
+			if resp.StatusCode == http.StatusServiceUnavailable {
+				return backoff.Permanent(errors.New("page not yet rendered"))
+			}
 		}
 
 		if resp.StatusCode != http.StatusOK {
