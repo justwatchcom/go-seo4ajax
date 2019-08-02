@@ -184,10 +184,13 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
-		// conditionally terminate retry loop if the status code is 503
+		// conditionally terminate retry loop if the status code is 503 or 404
 		if !c.retryUnavailable {
 			if resp.StatusCode == http.StatusServiceUnavailable {
 				return backoff.Permanent(errors.New("page not yet rendered"))
+			}
+			if resp.StatusCode == http.StatusNotFound {
+				return backoff.Permanent(errors.New("page not found"))
 			}
 		}
 

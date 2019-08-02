@@ -387,7 +387,7 @@ func TestIsPrerender(t *testing.T) {
 	Convey("return immediate on 503 if configured", t, func() {
 		token := "123"
 
-		ts := httptest.NewServer(&succeedOcasionally{max: 2, sleep: 0 * time.Second})
+		ts := httptest.NewServer(&succeedOccasionally{max: 2, sleep: 0 * time.Second})
 		defer ts.Close()
 
 		seo4ajaxClient, err := New(Config{
@@ -417,12 +417,12 @@ func TestIsPrerender(t *testing.T) {
 	})
 }
 
-type succeedOcasionally struct {
+type succeedOccasionally struct {
 	n, max int
 	sleep  time.Duration
 }
 
-func (s *succeedOcasionally) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *succeedOccasionally) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.n++
 	if s.n <= s.max {
 		time.Sleep(s.sleep)
