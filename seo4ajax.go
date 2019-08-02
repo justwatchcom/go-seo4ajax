@@ -218,7 +218,7 @@ func (c *Client) GetPrerenderedPage(w http.ResponseWriter, r *http.Request) {
 	}
 	err := backoff.Retry(opFunc, bo)
 	if err != nil {
-		c.log.Log("level", "warn", "msg", "Upstream request failed", "err", err)
+		c.log.Log("level", "warn", "msg", "Upstream request failed", "err", err, "path", r.URL.Path)
 		if !outputStarted {
 			http.Error(w, "Upstream error", c.fetchErrorStatus)
 			return
