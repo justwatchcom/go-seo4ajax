@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -382,4 +383,51 @@ func TestIsPrerender(t *testing.T) {
 		So(err, ShouldNotBeNil)
 		So(err, ShouldEqual, ErrNoToken)
 	})
+
+	Convey("return immediate on 503 if configured", t, func() {
+		token := "123"
+
+		ts := httptest.NewServer(&succeedOcasionally{max: 2, sleep: 0 * time.Second})
+		defer ts.Close()
+
+		seo4ajaxClient, err := New(Config{
+			IP:               serverIP,
+			Token:            token,
+			Server:           ts.URL,
+			Timeout:          8 * time.Second,
+			RetryUnavailable: false,
+			FetchTimeout:     2 * time.Second,
+		})
+
+		So(err, ShouldBeNil)
+		So(seo4ajaxClient, ShouldNotBeNil)
+
+		req, err := http.NewRequest("GET", "http://"+appAdress+"/", nil)
+		req.Header.Add("user-agent", "Googlebot")
+		So(err, ShouldBeNil)
+		So(req, ShouldNotBeNil)
+		So(IsPrerender(req), ShouldBeTrue)
+
+		recorder := httptest.NewRecorder()
+		seo4ajaxClient.ServeHTTP(recorder, req)
+
+		So(err, ShouldBeNil)
+		So(recorder.Code, ShouldEqual, 503)
+
+	})
+}
+
+type succeedOcasionally struct {
+	n, max int
+	sleep  time.Duration
+}
+
+func (s *succeedOcasionally) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.n++
+	if s.n <= s.max {
+		time.Sleep(s.sleep)
+		http.Error(w, "not yet rendered", http.StatusServiceUnavailable)
+		return
+	}
+	http.Error(w, "rendered", http.StatusOK)
 }
