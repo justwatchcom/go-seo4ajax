@@ -1,6 +1,6 @@
 /*
-	Package seo4ajax provides a library for accessing the SEO4Ajax prerender service.
-	Before using, you need to set ServerIp to a valid IP address.
+Package seo4ajax provides a library for accessing the SEO4Ajax prerender service.
+Before using, you need to set ServerIp to a valid IP address.
 */
 package seo4ajax
 
@@ -21,9 +21,10 @@ import (
 var (
 	// ErrNoToken is returned when the client isn't provided a API token
 	ErrNoToken = errors.New("no token given")
-	// seo4ajax responded with a cache miss
-	ErrCacheMiss     = errors.New("cache miss from seo4ajax")
-	ErrUnknownStatus = errors.New("Unkonwn Status Code")
+	// ErrCacheMiss happens if seo4ajax responded with a cache miss
+	ErrCacheMiss = errors.New("cache miss from seo4ajax")
+	// ErrUnknownStatus represents an unknown status code
+	ErrUnknownStatus = errors.New("Unknown Status Code")
 	errRedirect      = errors.New("SEO4AJAX: do not follow redirect")
 
 	regexInvalidUserAgent = regexp.MustCompile(`(?i:bing|msnbot|yandexbot|pinterest.*ios|mail\.ru)`)
