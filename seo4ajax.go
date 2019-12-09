@@ -28,7 +28,8 @@ var (
 
 	regexInvalidUserAgent = regexp.MustCompile(`(?i:bing|msnbot|yandexbot|pinterest.*ios|mail\.ru)`)
 	regexValidUserAgent   = regexp.MustCompile(`(?i:bot|google|crawler|spider|archiver|pinterest|facebookexternalhit|flipboardproxy)`)
-	regexPath             = regexp.MustCompile(`.*(\.[^?]{2,4}$|\.[^?]{2,4}?.*)`)
+	regexFilePath         = regexp.MustCompile(`.*(\.[^?]{2,4}$|\.[^?]{2,4}?.*)`)
+	regexIndexHTML        = regexp.MustCompile(`/index\.html?`)
 )
 
 // Config is the Seo4Ajax Client config
@@ -125,7 +126,7 @@ func IsPrerender(r *http.Request) bool {
 		return false
 	}
 
-	if regexPath.MatchString(r.URL.Path) {
+	if !regexIndexHTML.MatchString(r.URL.Path) && regexFilePath.MatchString(r.URL.Path) {
 		return false
 	}
 
