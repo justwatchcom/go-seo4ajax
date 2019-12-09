@@ -232,6 +232,48 @@ func TestIsPrerender(t *testing.T) {
 		})
 	})
 
+	Convey("file path URLs (not) excluded", t, func() {
+		Convey("/somefile.js: don't prerender (file path, 2-char extension)", func() {
+			req, err := http.NewRequest(http.MethodGet, "http://"+appAdress+"/somefile.js", nil)
+			So(err, ShouldBeNil)
+			So(req, ShouldNotBeNil)
+			req.Header.Add("user-agent", "Googlebot")
+			So(IsPrerender(req), ShouldBeFalse)
+		})
+
+		Convey("/somefile.css: don't prerender (file path, 3-char extension)", func() {
+			req, err := http.NewRequest(http.MethodGet, "http://"+appAdress+"/somefile.css", nil)
+			So(err, ShouldBeNil)
+			So(req, ShouldNotBeNil)
+			req.Header.Add("user-agent", "Googlebot")
+			So(IsPrerender(req), ShouldBeFalse)
+		})
+
+		Convey("/somefile.html: don't prerender (file path, 4-char extension)", func() {
+			req, err := http.NewRequest(http.MethodGet, "http://"+appAdress+"/somefile.html", nil)
+			So(err, ShouldBeNil)
+			So(req, ShouldNotBeNil)
+			req.Header.Add("user-agent", "Googlebot")
+			So(IsPrerender(req), ShouldBeFalse)
+		})
+
+		Convey("/index.html: do prerender (exception)", func() {
+			req, err := http.NewRequest(http.MethodGet, "http://"+appAdress+"/index.html", nil)
+			So(err, ShouldBeNil)
+			So(req, ShouldNotBeNil)
+			req.Header.Add("user-agent", "Googlebot")
+			So(IsPrerender(req), ShouldBeTrue)
+		})
+
+		Convey("/index.htm: do prerender (exception)", func() {
+			req, err := http.NewRequest(http.MethodGet, "http://"+appAdress+"/index.htm", nil)
+			So(err, ShouldBeNil)
+			So(req, ShouldNotBeNil)
+			req.Header.Add("user-agent", "Googlebot")
+			So(IsPrerender(req), ShouldBeTrue)
+		})
+	})
+
 	Convey("with mock server", t, func() {
 		token := "123"
 
